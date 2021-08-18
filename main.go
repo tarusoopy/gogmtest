@@ -92,6 +92,7 @@ func main() {
 		IndexStrategy: gogm.VALIDATE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
 		PoolSize:      50,
 		Port:          7687,
+		Protocol:      "neo4j",
 		IsCluster:     false, //tells it whether or not to use `bolt+routing`
 		Host:          "localhost",
 		Password:      "hn3437",
