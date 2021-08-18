@@ -93,8 +93,8 @@ func main() {
 		PoolSize:      50,
 		Port:          7687,
 		IsCluster:     false, //tells it whether or not to use `bolt+routing`
-		Host:          "0.0.0.0",
-		Password:      "password",
+		Host:          "localhost",
+		Password:      "hn3437",
 		Username:      "neo4j",
 	}
 
