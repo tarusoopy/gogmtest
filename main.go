@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/mindstand/gogm/v2"
-	"reflect"
 	"time"
 )
 
@@ -14,7 +13,7 @@ type tdInt int
 //structs for the example (can also be found in decoder_test.go)
 type VertexA struct {
 	// provides required node fields
-	gogm.BaseUUIDNode
+	gogm.BaseNode
 
 	TestField         string            `gogm:"name=test_field"`
 	TestTypeDefString tdString          `gogm:"name=test_type_def_string"`
@@ -30,7 +29,7 @@ type VertexA struct {
 
 type VertexB struct {
 	// provides required node fields
-	gogm.BaseUUIDNode
+	gogm.BaseNode
 
 	TestField  string     `gogm:"name=test_field"`
 	TestTime   time.Time  `gogm:"name=test_time"`
@@ -41,67 +40,42 @@ type VertexB struct {
 	MultiSpec  []*EdgeC   `gogm:"direction=incoming;relationship=special_multi"`
 }
 
-// EdgeC implements Edge
 type EdgeC struct {
 	// provides required node fields
-	gogm.BaseUUIDNode
+	gogm.BaseNode
 
 	Start *VertexA
 	End   *VertexB
 	Test  string `gogm:"name=test"`
 }
 
-func (e *EdgeC) GetStartNode() interface{} {
-	return e.Start
-}
-
-func (e *EdgeC) GetStartNodeType() reflect.Type {
-	return reflect.TypeOf(&VertexA{})
-}
-
-func (e *EdgeC) SetStartNode(v interface{}) error {
-	val, ok := v.(*VertexA)
-	if !ok {
-		return fmt.Errorf("unable to cast [%T] to *VertexA", v)
-	}
-
-	e.Start = val
-	return nil
-}
-
-func (e *EdgeC) GetEndNode() interface{} {
-	return e.End
-}
-
-func (e *EdgeC) GetEndNodeType() reflect.Type {
-	return reflect.TypeOf(&VertexB{})
-}
-
-func (e *EdgeC) SetEndNode(v interface{}) error {
-	val, ok := v.(*VertexB)
-	if !ok {
-		return fmt.Errorf("unable to cast [%T] to *VertexB", v)
-	}
-
-	e.End = val
-	return nil
-}
-
 func main() {
+	// define your configuration
 	config := gogm.Config{
-		IndexStrategy: gogm.VALIDATE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
-		PoolSize:      50,
+		Host:          "0.0.0.0",
 		Port:          7687,
-		Protocol:      "neo4j",
 		IsCluster:     false, //tells it whether or not to use `bolt+routing`
-		Host:          "localhost",
-		Password:      "hn3437",
 		Username:      "neo4j",
+		Password:      "hn3437",
+		PoolSize:      50,
+		IndexStrategy: gogm.VALIDATE_INDEX, //other options are ASSERT_INDEX and IGNORE_INDEX
+		TargetDbs:     nil,
+		// default logger wraps the go "log" package, implement the Logger interface from gogm to use your own logger
+		Logger: gogm.GetDefaultLogger(),
+		// define the log level
+		LogLevel: "DEBUG",
+		// enable neo4j go driver to log
+		EnableDriverLogs: false,
+		// enable gogm to log params in cypher queries. WARNING THIS IS A SECURITY RISK! Only use this when debugging
+		EnableLogParams: false,
+		// enable open tracing. Ensure contexts have spans already. GoGM does not make root spans, only child spans
+		OpentracingEnabled: false,
 	}
 
 	// register all vertices and edges
 	// this is so that GoGM doesn't have to do reflect processing of each edge in real time
 	// use nil or gogm.DefaultPrimaryKeyStrategy if you only want graph ids
+	// we are using the default key strategy since our vertices are using BaseNode
 	_gogm, err := gogm.New(&config, gogm.DefaultPrimaryKeyStrategy, &VertexA{}, &VertexB{}, &EdgeC{})
 	if err != nil {
 		panic(err)
@@ -135,7 +109,7 @@ func main() {
 
 	//load the object we just made (save will set the uuid)
 	var readin VertexA
-	err = sess.Load(context.Background(), &readin, aVal.UUID)
+	err = sess.Load(context.Background(), &readin, aVal.Id)
 	if err != nil {
 		panic(err)
 	}
